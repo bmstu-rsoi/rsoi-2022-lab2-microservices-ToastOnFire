@@ -17,7 +17,7 @@ services:
 # TODO добавить сервисы
   gateway:
       image: gateway
-      build: ./gateway/
+      build: ./Gateway/
       ports:
         - "8080:8080"
       depends_on:
