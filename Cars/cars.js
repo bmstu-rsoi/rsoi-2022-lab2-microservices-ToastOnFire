@@ -24,7 +24,7 @@ gateway.use(bodyParser.urlencoded({
 
 tableInit();
 
-gateway.get(path+'/manage/health', (request, response) => {
+gateway.get('/manage/health', (request, response) => {
   response.status(200).send();
 });
 

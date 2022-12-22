@@ -22,7 +22,7 @@ gateway.use(bodyParser.urlencoded({
   extended: true
 })); 
 
-gateway.get(path+'/manage/health', (request, response) => {
+gateway.get('/manage/health', (request, response) => {
   response.status(200).send();
 });
 
