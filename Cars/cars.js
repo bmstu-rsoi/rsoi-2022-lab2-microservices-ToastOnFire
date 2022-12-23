@@ -1,6 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
-const gateway = express();
+const cars = express();
 const bodyParser = require('body-parser');
 
 const path = '/api/v1';
@@ -17,18 +17,80 @@ const pool = new Pool({
 	host: 'postgres',
 });
 
-gateway.use(bodyParser.json());
-gateway.use(bodyParser.urlencoded({
+cars.use(bodyParser.json());
+cars.use(bodyParser.urlencoded({
   extended: true
-})); 
+}));
 
-tableInit();
+setTimeout(() => {
+	tableInit();
+}, 2000);
 
-gateway.get('/manage/health', (request, response) => {
-  response.status(200).send();
+cars.get('/manage/health', (request, response) => {
+	pool.query('SELECT * FROM cars', (err, res) => {
+		if(!err){
+		  console.log(res);
+		  response.status(200).send();
+		}
+		else {
+		  console.log(err);
+		  response.status(200).send();
+		}
+	})
 });
 
-gateway.listen(process.env.PORT || serverPortNumber, () => {
+cars.get(path+'/cars', (request, response) => {
+	let getAllCarsQuery = `
+	SELECT * FROM cars
+	`
+	
+	getAllCarsQuery += (request.query.showAll == false ? ' WHERE available = true;' : ';');
+	
+	pool.query(getAllCarsQuery)
+		.then(res => {
+			let resObject = {
+				page: +request.query.page,
+				pageSize: +request.query.size,
+				totalElements: 0,
+				items: []
+			}
+			
+			resObject.items = res.rows.slice((resObject.page-1) * resObject.pageSize, resObject.page * resObject.pageSize);
+			resObject.totalElements = resObject.items.length;
+			
+			for(let i = 0; i < resObject.items.length; i++){
+				resObject.items[i].carUid = resObject.items[i]['car_uid'];
+				delete resObject.items[i].car_uid;
+				resObject.items[i].registrationNumber = resObject.items[i]['registration_number'];
+				delete resObject.items[i].registration_number;
+			}
+			
+			response.status(200).json(resObject);
+		})
+});
+
+cars.post(path+'/carcheck', (request, response) => {
+	let getCarByUidQuery = `
+	SELECT * FROM cars WHERE car_uid = $1;
+	`;
+	let availableUpdateQuery = `
+	UPDATE cars SET available = false WHERE car_uid = $1;
+	`;
+	
+	pool.query(getCarByUidQuery, request.body.carUid)
+		.then(res => {
+			if (res.rows.length > 0) {
+				pool.query(availableUpdateQuery, request.body.carUid)
+					.then(res => {
+						response.sendStatus(200);
+					})
+			} else {
+				response.sendStatus(400);
+			}
+		})
+});
+
+cars.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Cars server works on port '+serverPortNumber);
 })
 
@@ -45,18 +107,9 @@ function tableInit() {
 		price               INT         NOT NULL,
 		type                VARCHAR(20)
 			CHECK (type IN ('SEDAN', 'SUV', 'MINIVAN', 'ROADSTER')),
-		availability        BOOLEAN     NOT NULL
+		available        BOOLEAN     NOT NULL
 	);
-	`
-
-	pool.query(carsTable, (err, res) => {
-		if(!err){
-		  console.log(result)
-		}
-		else {
-		  console.log(err.message)
-		}
-	})
+	`;
 	
 	let testValues = [
 		1,
@@ -65,23 +118,29 @@ function tableInit() {
 		'GLA 250',
 		'ЛО777Х799',
 		249,
-		'SEDAN',
 		3500,
+		'SEDAN',
 		true
 	]
 	
 	let testDataInsert = `
-		INSERT INTO cars (id, car_uid, brand, model, registration_number, power, price, type, availability) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO cars (id, car_uid, brand, model, registration_number, power, price, type, available) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 	`
-	
-	pool.query(testDataInsert, testValues, (err, res) => {
-		if(!err){
-		  console.log(result)
-		}
-		else {
-		  console.log(err.message)
-		}
-	})
-	
+
+	pool.query(carsTable)
+		.then(res => {
+			console.log('Table initialized');
+			pool.query(testDataInsert, testValues, (err, res) => {
+				if(!err){
+				  console.log('Data inserted')
+				}
+				else {
+				  console.log('Data not inserted')
+				}
+			})
+		})
+		.catch(err => {
+			console.log('Table initialization error');
+		})
 }

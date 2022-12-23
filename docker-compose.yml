@@ -35,6 +35,7 @@ services:
       depends_on:
         - postgres
       environment:
+        DATABASE_URL: "postgres://program:test@postgres:5432/cars"
         PORT: 8070
       
   rental:
