@@ -64,12 +64,14 @@ gateway.get(path+'/rental/:rentalUid', (request, response) => {
 
 gateway.post(path+'/rental', (request, response) => {
 	let rentalParams = {
-		username: request.headers['X-User-Name'],
+		username: request.header('X-User-Name'),
 		carUid: request.body.carUid,
 		dateFrom: request.body.dateFrom,
 		dateTo: request.body.dateTo, 
 		rentalUid: uuidv4()
 	}
+	
+	console.log(rentalParams);
 	
 	fetch(adress.car+path+'/carcheck', {
 		method: 'Post',
