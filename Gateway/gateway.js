@@ -1,5 +1,5 @@
 const express = require('express');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const gateway = express();
 const bodyParser = require('body-parser');
 
@@ -108,7 +108,7 @@ gateway.post(path+'/rental', (request, response) => {
 						dateTo: rentalParams.dateTo,
 						payment: {
 							paymentUid: paymentParams.paymentUid,
-							status: 'PAID'
+							status: 'PAID',
 							price: Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 3600 * 24))
 						}
 					}
