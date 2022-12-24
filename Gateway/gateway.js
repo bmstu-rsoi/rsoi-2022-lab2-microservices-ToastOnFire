@@ -71,8 +71,6 @@ gateway.post(path+'/rental', (request, response) => {
 		rentalUid: uuidv4()
 	}
 	
-	console.log(rentalParams);
-	
 	fetch(adress.car+path+'/carcheck', {
 		method: 'Post',
 	body: JSON.stringify({carUid: rentalParams.carUid})
@@ -89,11 +87,11 @@ gateway.post(path+'/rental', (request, response) => {
 			rentalParams.paymentUid = paymentParams['paymentUid'];
 			
 			Promise.all([
-				fetch(adress.cars+path+'/rental/add', {
+				fetch(adress.rental+path+'/rental/add', {
 					method: 'POST',
 					body: JSON.stringify(rentalParams)
 				}),
-				fetch(adress.cars+path+'/payment/add', {
+				fetch(adress.payment+path+'/payment/add', {
 					method: 'POST',
 					body: JSON.stringify(paymentParams)
 				})
