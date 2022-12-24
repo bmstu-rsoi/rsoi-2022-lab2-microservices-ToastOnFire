@@ -1,4 +1,5 @@
 const express = require('express');
+const uuidv4 = require('uuid/v4');
 const gateway = express();
 const bodyParser = require('body-parser');
 
@@ -66,7 +67,8 @@ gateway.post(path+'/rental', (request, response) => {
 		username: request.headers['X-User-Name'],
 		carUid: request.body.carUid,
 		dateFrom: request.body.dateFrom,
-		dateTo: request.body.dateTo
+		dateTo: request.body.dateTo, 
+		rentalUid: uuidv4()
 	}
 	
 	fetch(adress.car+path+'/carcheck', {
@@ -75,7 +77,49 @@ gateway.post(path+'/rental', (request, response) => {
 	})
 	.then(result => {
 		if (result.status == 200) {
+			let paymentParams = {
+				price: result.body.price,
+				dateFrom: request.body.dateFrom,
+				dateTo: request.body.dateTo,
+				paymentUid: uuidv4()
+			}
 			
+			rentalParams.paymentUid = paymentParams['paymentUid'];
+			
+			Promise.all([
+				fetch(adress.cars+path+'/rental/add', {
+					method: 'POST',
+					body: JSON.stringify(rentalParams)
+				}),
+				fetch(adress.cars+path+'/payment/add', {
+					method: 'POST',
+					body: JSON.stringify(paymentParams)
+				})
+			]).then(resArr => {
+				if(resArr[0].status == 200 && resArr[1].status == 200) {
+					let dateFrom = new Date(request.body.dateFrom);
+					let dateTo = new Date(request.body.dateTo);
+					
+					responseObj = {
+						rentalUid: rentalParams.rentalUid,
+						status: 'IN_PROGRESS',
+						carUid: rentalParams.carUid,
+						dateFrom: rentalParams.dateFrom,
+						dateTo: rentalParams.dateTo,
+						payment: {
+							paymentUid: paymentParams.paymentUid,
+							status: 'PAID'
+							price: Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 3600 * 24))
+						}
+					}
+					
+					response.status(200).json(responseObj)
+				} else {
+					response.status(400).json({message: 'Ошибка: не получилось создать записи об аренде'})
+				}
+			})
+		}  else {
+			response.status(400).json({message: 'Ошибка: Автомобиль уже забронирован'})
 		}
 	})
 });

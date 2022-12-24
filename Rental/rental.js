@@ -56,63 +56,17 @@ rental.get(path+'/rental', (request, response) => {
 		})
 });
 
-rental.get(path+'/rental_by_id', (request, response) => {
-	let getAllCarsQuery = `
-	SELECT * FROM cars
+rental.post(path+'/rental/add', (request, response) => {
+	let addRentalQuery = `
+	INSERT INTO rental (rental_uid, username, payment_uid, car_uid, date_from, date_to, status) 
+	VALUES ($1, $2, $3, $4, $5, $6, 'IN_PROGRESS');
 	`
 	
-	getAllCarsQuery += (request.query.showAll == false ? ' WHERE available = true;' : ';');
-	
-	pool.query(getAllCarsQuery)
+	pool.query(addRentalQuery, Object.values(request.body))
 		.then(res => {
-			let resObject = {
-				page: +request.query.page,
-				pageSize: +request.query.size,
-				totalElements: 0,
-				items: []
-			}
-			
-			resObject.items = res.rows.slice((resObject.page-1) * resObject.pageSize, resObject.page * resObject.pageSize);
-			resObject.totalElements = resObject.items.length;
-			
-		for(let i = 0; i < resObject.items.length; i++){
-			resObject.items[i].carUid = resObject.items[i]['car_uid'];
-			delete resObject.items[i].car_uid;
-			resObject.items[i].registrationNumber = resObject.items[i]['registration_number'];
-			delete resObject.items[i].registration_number;
-		}
-			
-			response.status(200).json(resObject);
-		})
-});
-
-rental.post(path+'/rental', (request, response) => {
-	let getAllCarsQuery = `
-	SELECT * FROM cars
-	`
-	
-	getAllCarsQuery += (request.query.showAll == false ? ' WHERE available = true;' : ';');
-	
-	pool.query(getAllCarsQuery)
-		.then(res => {
-			let resObject = {
-				page: +request.query.page,
-				pageSize: +request.query.size,
-				totalElements: 0,
-				items: []
-			}
-			
-			resObject.items = res.rows.slice((resObject.page-1) * resObject.pageSize, resObject.page * resObject.pageSize);
-			resObject.totalElements = resObject.items.length;
-			
-		for(let i = 0; i < resObject.items.length; i++){
-			resObject.items[i].carUid = resObject.items[i]['car_uid'];
-			delete resObject.items[i].car_uid;
-			resObject.items[i].registrationNumber = resObject.items[i]['registration_number'];
-			delete resObject.items[i].registration_number;
-		}
-			
-			response.status(200).json(resObject);
+			response.sendStatus(200);
+		}).catch(err => {
+			response.sendStatus(400);
 		})
 });
 

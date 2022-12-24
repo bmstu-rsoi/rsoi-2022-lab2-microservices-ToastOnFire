@@ -30,6 +30,25 @@ payment.get('/manage/health', (request, response) => {
   response.status(200).send();
 });
 
+payment.post(path+'/payment/add', (request, response) => {
+	let addRentalQuery = `
+	INSERT INTO payment (payment_uid, status, price) 
+	VALUES ($1, 'PAID', $2);
+	`
+	
+	let dateFrom = new Date(request.body.dateFrom);
+	let dateTo = new Date(request.body.dateTo);
+	
+	let values = [request.body.paymentUid, Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 3600 * 24))]
+	
+	pool.query(addRentalQuery, Object.values(request.body))
+		.then(res => {
+			response.sendStatus(200);
+		}).catch(err => {
+			response.sendStatus(400);
+		})
+});
+
 payment.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Payment server works on port '+serverPortNumber);
 })

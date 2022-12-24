@@ -78,11 +78,11 @@ cars.post(path+'/carcheck', (request, response) => {
 	`;
 	
 	pool.query(getCarByUidQuery, request.body.carUid)
-		.then(res => {
-			if (res.rows.length > 0) {
+		.then(result => {
+			if (result.rows.length > 0) {
 				pool.query(availableUpdateQuery, request.body.carUid)
 					.then(res => {
-						response.sendStatus(200);
+						response.status(200).json({price: result.rows[0].price});
 					})
 			} else {
 				response.sendStatus(400);
