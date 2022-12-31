@@ -38,21 +38,74 @@ gateway.get(path+'/cars', (request, response) => {
 });
 
 gateway.get(path+'/rental', (request, response) => {
-	let rentalParams = {
-		username: request.headers['X-User-Name']
+	let userName = {
+		username: request.header('X-User-Name')
 	}
 	
-	fetch(adress.cars+path+'/rental?' + new URLSearchParams(carsParams), {
+	fetch(adress.rental+path+'/rental_by_user?' + new URLSearchParams(userName), {
 		method: 'GET'
 	})
 	.then(result => result.json())
-    .then(data => response.status(200).json(data));
+	.then(resData => {
+		let carsUids = [];
+		let paymentUids = [];
+		
+		for(let obj of resData) {
+			carsUids.push(obj.car_uid);
+			paymentUids.push(obj.payment_uid);
+		}
+		
+		Promise.all([
+			fetch(adress.cars+path+'/cars_by_uid', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({carsUidsArr: carsUids})
+			}),
+			fetch(adress.payment+path+'/payment_by_uid', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({paymentUidsArr: paymentUids})
+			})
+		])
+		.then(resArr => {
+			return Promise.all(resArr.map(r => r.json()));
+		})
+		.then(resArrData => {
+			responseArray = [];
+			for(let obj of resData) {
+				let responseObj = {
+					rentalUid: obj.rental_uid,
+					status: obj.status,
+					dateFrom: obj.date_from,
+					dateTo: obj.date_to,
+					car: {
+						carUid: obj.car_uid,
+						brand: (resArrData[0][obj.car_uid]).brand,
+						model: (resArrData[0][obj.car_uid]).model,
+						registrationNumber: (resArrData[0][obj.car_uid]).registration_number
+					},
+					payment: {
+						paymentUid: obj.payment_uid,
+						status: (resArrData[1][obj.payment_uid]).status,
+						price: (resArrData[1][obj.payment_uid]).price
+					}
+				}
+				responseArray.push(responseObj);
+			}
+			
+			response.status(200).json(responseArray);
+		})
+	})
 });
 
 gateway.get(path+'/rental/:rentalUid', (request, response) => {
 	let rentalParams = {
 		rentalUid: request.params.rentalUid,
-		username: request.headers['X-User-Name']
+		username: request.header('X-User-Name')
 	}
 	
 	fetch(adress.cars+path+'/rental_by_id?' + new URLSearchParams(carsParams), {

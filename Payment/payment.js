@@ -49,6 +49,22 @@ payment.post(path+'/payment/add', (request, response) => {
 		})
 });
 
+payment.post(path+'/payment_by_uid', (request, response) => {
+	let getPaymentsByUidQuery = `
+	SELECT payment_uid, status, price FROM payment 
+	WHERE payment_uid IN (\'`+((request.body.paymentUidsArr).join('\',\''))+`\');
+	`;
+	
+	pool.query(getPaymentsByUidQuery)
+		.then(result => {
+			resObj = {};
+			for(let obj of result.rows) {
+				resObj[obj.payment_uid] = obj;
+			}
+			response.status(200).json(resObj);
+		})
+});
+
 payment.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Payment server works on port '+serverPortNumber);
 })

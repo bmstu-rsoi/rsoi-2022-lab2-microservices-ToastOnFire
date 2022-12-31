@@ -71,7 +71,7 @@ cars.get(path+'/cars', (request, response) => {
 
 cars.post(path+'/carcheck', (request, response) => {
 	let getCarByUidQuery = `
-	SELECT * FROM cars WHERE car_uid = $1;
+	SELECT * FROM cars WHERE car_uid = $1 AND available = true;
 	`;
 	let availableUpdateQuery = `
 	UPDATE cars SET available = false WHERE car_uid = $1;
@@ -90,6 +90,23 @@ cars.post(path+'/carcheck', (request, response) => {
 			} else {
 				response.sendStatus(400);
 			}
+		})
+});
+
+cars.post(path+'/cars_by_uid', (request, response) => {
+	let getCarByUidQuery = `
+	SELECT car_uid, brand, model, registration_number FROM cars 
+	WHERE car_uid IN (\'`+((request.body.carsUidsArr).join('\',\''))+`\');
+	`;
+	
+	pool.query(getCarByUidQuery)
+		.then(result => {
+			let resObj = {};
+			for(let obj of result.rows) {
+				resObj[obj.car_uid] = obj;
+			}
+			
+			response.status(200).json(resObj);
 		})
 });
 

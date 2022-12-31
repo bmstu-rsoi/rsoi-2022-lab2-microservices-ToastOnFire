@@ -30,32 +30,6 @@ rental.get('/manage/health', (request, response) => {
   response.status(200).send();
 });
 
-rental.get(path+'/rental', (request, response) => {
-	let getAllUserRentsQuery = `
-	SELECT * FROM rental WHERE username = $1;
-	`
-	
-	pool.query(getAllUserRentsQuery, request.query.username)
-		.then(res => {
-			let resObject = {
-				page: +request.query.page,
-				pageSize: +request.query.size,
-				totalElements: 0,
-				items: []
-			}
-			
-			
-			for(let i = 0; i < resObject.items.length; i++){
-				resObject.items[i].carUid = resObject.items[i]['car_uid'];
-				delete resObject.items[i].car_uid;
-				resObject.items[i].registrationNumber = resObject.items[i]['registration_number'];
-				delete resObject.items[i].registration_number;
-			}
-				
-			response.status(200).json(resObject);
-		})
-});
-
 rental.post(path+'/rental/add', (request, response) => {
 	let addRentalQuery = `
 	INSERT INTO rental (rental_uid, username, payment_uid, car_uid, date_from, date_to, status) 
@@ -69,6 +43,18 @@ rental.post(path+'/rental/add', (request, response) => {
 			response.sendStatus(400);
 		})
 });
+
+rental.get(path+'/rental_by_user', (request, response) => {
+	let getAllUserRentsQuery = `
+	SELECT rental_uid, status, to_char(date_from, 'YYYY-MM-DD') date_from, to_char(date_to, 'YYYY-MM-DD') date_to, car_uid, payment_uid, username FROM rental
+	WHERE username = $1;
+	`
+	
+	pool.query(getAllUserRentsQuery, [request.query.username])
+		.then(res => {
+			response.status(200).json(res.rows);
+		})
+})
 
 rental.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Rental server works on port '+serverPortNumber);
