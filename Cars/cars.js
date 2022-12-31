@@ -77,12 +77,15 @@ cars.post(path+'/carcheck', (request, response) => {
 	UPDATE cars SET available = false WHERE car_uid = $1;
 	`;
 	
-	pool.query(getCarByUidQuery, request.body.carUid)
+	pool.query(getCarByUidQuery, Object.values(request.body))
 		.then(result => {
 			if (result.rows.length > 0) {
-				pool.query(availableUpdateQuery, request.body.carUid)
+				pool.query(availableUpdateQuery, Object.values(request.body))
 					.then(res => {
-						response.status(200).json({price: result.rows[0].price});
+						let resObject = {
+							price: (result.rows[0]).price
+						};
+						response.status(200).json(resObject);
 					})
 			} else {
 				response.sendStatus(400);

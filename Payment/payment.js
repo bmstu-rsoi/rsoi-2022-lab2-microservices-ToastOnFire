@@ -39,9 +39,9 @@ payment.post(path+'/payment/add', (request, response) => {
 	let dateFrom = new Date(request.body.dateFrom);
 	let dateTo = new Date(request.body.dateTo);
 	
-	let values = [request.body.paymentUid, Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 3600 * 24))]
+	let values = [request.body.paymentUid, Math.ceil(request.body.price*(Math.abs(dateTo.getTime() - dateFrom.getTime()) / (1000 * 3600 * 24)))]
 	
-	pool.query(addRentalQuery, Object.values(request.body))
+	pool.query(addRentalQuery, values)
 		.then(res => {
 			response.sendStatus(200);
 		}).catch(err => {

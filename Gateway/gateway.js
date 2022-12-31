@@ -64,21 +64,36 @@ gateway.get(path+'/rental/:rentalUid', (request, response) => {
 
 gateway.post(path+'/rental', (request, response) => {
 	let rentalParams = {
+		rentalUid: uuidv4(),
 		username: request.header('X-User-Name'),
+		paymentUid: undefined,
 		carUid: request.body.carUid,
 		dateFrom: request.body.dateFrom,
-		dateTo: request.body.dateTo, 
-		rentalUid: uuidv4()
+		dateTo: request.body.dateTo
 	}
 	
-	fetch(adress.car+path+'/carcheck', {
-		method: 'Post',
-	body: JSON.stringify({carUid: rentalParams.carUid})
+	let carsParams = {
+		carUid: rentalParams.carUid
+	}
+	
+	fetch(adress.cars+path+'/carcheck', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(carsParams)
 	})
 	.then(result => {
 		if (result.status == 200) {
+			return result.json();
+		} else {
+			return 400;
+		}
+	})
+	.then(resultData => {
+		if (resultData != 400) {
 			let paymentParams = {
-				price: result.body.price,
+				price: resultData.price,
 				dateFrom: request.body.dateFrom,
 				dateTo: request.body.dateTo,
 				paymentUid: uuidv4()
@@ -89,10 +104,16 @@ gateway.post(path+'/rental', (request, response) => {
 			Promise.all([
 				fetch(adress.rental+path+'/rental/add', {
 					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
 					body: JSON.stringify(rentalParams)
 				}),
 				fetch(adress.payment+path+'/payment/add', {
 					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
 					body: JSON.stringify(paymentParams)
 				})
 			]).then(resArr => {
@@ -109,7 +130,7 @@ gateway.post(path+'/rental', (request, response) => {
 						payment: {
 							paymentUid: paymentParams.paymentUid,
 							status: 'PAID',
-							price: Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 3600 * 24))
+							price: Math.ceil(paymentParams.price * (Math.abs(dateTo.getTime() - dateFrom.getTime()) / (1000 * 3600 * 24)))
 						}
 					}
 					
