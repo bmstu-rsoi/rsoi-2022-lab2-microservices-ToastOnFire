@@ -44,17 +44,51 @@ rental.post(path+'/rental/add', (request, response) => {
 		})
 });
 
-rental.get(path+'/rental_by_user', (request, response) => {
+rental.get(path+'/rental_by_params', (request, response) => {
 	let getAllUserRentsQuery = `
 	SELECT rental_uid, status, to_char(date_from, 'YYYY-MM-DD') date_from, to_char(date_to, 'YYYY-MM-DD') date_to, car_uid, payment_uid, username FROM rental
-	WHERE username = $1;
-	`
+	WHERE username = $1`
 	
-	pool.query(getAllUserRentsQuery, [request.query.username])
+	queryValues = [request.query.username];
+	
+	if (request.query.rentalUid != undefined) {
+		getAllUserRentsQuery += ' AND rental_uid = $2;';
+		queryValues.push(request.query.rentalUid);
+	} else {
+		getAllUserRentsQuery += ';';
+	}
+	
+	pool.query(getAllUserRentsQuery, queryValues)
 		.then(res => {
 			response.status(200).json(res.rows);
 		})
 })
+
+rental.get(path+'/get_rental_uids', (request, response) => {
+	let selectRentalQuery = `
+	SELECT car_uid, payment_uid, rental_uid FROM rental WHERE rental_uid = $1;
+	`
+	
+	pool.query(selectRentalQuery, [request.query.rentalUid])
+		.then(res => {
+			if (res.rows.length > 0) {
+				response.status(200).json(res.rows[0]);
+			} else {
+				response.sendStatus(404);
+			}
+		})
+})
+
+rental.put(path+'/change_status', (request, response) => {
+	let changeRentalStatusQuery = `
+	UPDATE rental SET status = $1 WHERE rental_uid = $2;
+	`
+	
+	pool.query(changeRentalStatusQuery, Object.values(request.body))
+		.then(res => {
+			response.sendStatus(204);
+		})
+});
 
 rental.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Rental server works on port '+serverPortNumber);

@@ -65,6 +65,17 @@ payment.post(path+'/payment_by_uid', (request, response) => {
 		})
 });
 
+payment.put(path+'/cancel_payment', (request, response) => {
+	let cancelPaymentQuery = `
+	UPDATE payment SET status ='CANCELED' WHERE payment_uid = $1;
+	`;
+	
+	pool.query(cancelPaymentQuery, [request.query.paymentUid])
+		.then(res => {
+			response.sendStatus(204);
+		})
+})
+
 payment.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Payment server works on port '+serverPortNumber);
 })

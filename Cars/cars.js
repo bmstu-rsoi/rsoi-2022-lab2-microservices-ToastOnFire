@@ -110,6 +110,17 @@ cars.post(path+'/cars_by_uid', (request, response) => {
 		})
 });
 
+cars.put(path+'/free_car', (request, response) => {
+	let freeCarQuery = `
+	UPDATE cars SET available = true WHERE car_uid = $1;
+	`;
+	
+	pool.query(freeCarQuery, [request.query.carUid])
+		.then(res => {
+			response.sendStatus(200);
+		})
+})
+
 cars.listen(process.env.PORT || serverPortNumber, () => {
 	console.log('Cars server works on port '+serverPortNumber);
 })
